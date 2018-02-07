@@ -93,7 +93,7 @@ h1{
   padding-top: 0.5em;
 }
 .white{
-  color: #f6f5f8;
+  color: #f6f5f8 !important;
 }
 .remote-data{
     font-size: 1.5em;
