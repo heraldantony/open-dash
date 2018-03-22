@@ -3,6 +3,10 @@ var media = require('./server/modules/media.js');
 var remote = require('./server/modules/remote.js');
 var path = require('path');
 var http = require("http");
+var capture = require("./server/mdd-capture.js");
+const EventEmitter = require("events");
+
+capture.app.listen(8086); // port is hard-coded on MDD
 
 var app = angular.module('app', ['ngRoute','ngMaterial','ngMessages']);
 app.config(function ($routeProvider) {
@@ -71,6 +75,11 @@ app.config(function ($routeProvider) {
         templateUrl: 'main/dashboard/radio/pandora/pandora.html',
         controller: 'PandoraController'
     }).
+    when('/radio/pandora/playlist',{
+        templateUrl: 'main/dashboard/radio/pandora/playlist.html',
+        controller: 'PlaylistController'
+    }).
+
     when('/radio/spotify',{
         templateUrl: 'main/dashboard/radio/spotify/spotify.html',
         controller: 'SpotifyController'
@@ -87,79 +96,66 @@ app.config(function ($routeProvider) {
         templateUrl: 'main/dashboard/camera/camera.html',
         controller: 'CameraController'
     }).
+
     otherwise({
         redirectTo: '/'
     });
 })
     .run([ '$rootScope', '$location', '$interval', '$timeout',
         function ($rootScope, $location, $interval, $timeout) {
-            function findMdd_old(){
-                function storeRemoteAddressInformation(
-                    remoteAddressInformation
-                ){
-                    $rootScope.remoteAddressInfo = remoteAddressInformation;
-                }
-                function autoconnect(handHeldProductList){
-                    var done = false;
-                    function visitDevice(device){
-                        if(done) return;
-                        if(!$rootScope.autoconnect_enabled)
-                            return done = true;
-                        remote.connectIfNotConnected(device.local_ip, null);
-                        $location.path("remote");
-                    }
-                    handHeldProductsList.map(visitDevice);
-                    if(done) return console.log("autoconnect is disabled");
-                }
-                function showMddOrHome(xWindowIdentifier){
-                    if(xWindowIdentifier)
-                       remote.mdd_WindowSet(xWindowIdentifier);
-                    else
-                        $location.path('/');
-                }
-                $rootScope.autoconnect_enabled = true;
-                var ipPromise = remote.findIP();
-                var mddPromise = remote.getMDD();
-                var deviceListPromise = ipPromise.then(
-                    remote.runScan.bind(remote)
-                );
-                var handHeldProductsListPromise = deviceListPromise.then(
-                    function(deviceList){
-                        return deviceList.filter(
-                            function isHandHeldProducts(device){
-                                return "Hand Held Products" === device.device;
-                            }
-                        );
-                    }
-                );
-                deviceListPromise.then(storeRemoteAddressInformation);
-                handHeldProductsListPromise.then(autoconnect);
-                mddPromise.then(showMddOrHome);
-            }
-	    var prevState = false;
-	    function findMdd(){
-		http.get(
-		    "http://127.0.0.1:8086/mdd/clientLives/",
-		    function(res){
-			var chunks = [];
-			res.on("data", chunks.push.bind(chunks));
-			res.on(
-			    "end",
-			    function(){
-				var live = JSON.parse(chunks.join(""));
-				if(live == prevState) return;
-				prevState = live;
-				if(live)
-				    $location.path("/remote");
-				else
-				    if("/remote" == $location.path())
-					$location.path("/");
-			    }
-			);
-		    }
-		);
-	    }
-            $interval(findMdd, 500);
+	    var jpg = {
+		jpgLastUpdate: null,
+		prevState: false,
+		jpgTimeout: 1000 * 15,
+		jpgHole: function(callback){
+			capture.state.jpegs.on("jpg", callback);
+		},
+		navigate: null,
+		changes: new EventEmitter()
+	    };
+	    jpg.changes.on(
+		"on",
+		function(){
+		    console.log("screens are arriving");
+		    jpg.navigate = "/remote";
+		}
+	    );
+	    jpg.changes.on(
+		"off",
+		function(){
+		    console.log("screens are not arriving");
+		    jpg.navigate = "/";
+		}
+	    );
+	    $rootScope.screenSharingContext = jpg;
+	    capture.state.jpegs.on(
+		"jpg",
+		function(){
+			function checkState(){
+				var delta = new Date() - jpg.jpgLastUpdate;
+				var on = delta < jpg.jpgTimeout;
+				if(on == jpg.prevState) return;
+				jpg.changes.emit("o" + (on ? "n" : "ff"));
+				jpg.prevState = on;
+			}
+			jpg.jpgLastUpdate = new Date();
+			setTimeout(checkState, jpg.jpgTimeout - 1);
+			setTimeout(checkState, jpg.jpgTimeout + 1);
+			checkState();
+		}
+	    );
+	    $interval(
+		function(){
+		    if(!jpg.navigate) return;
+		    var path = jpg.navigate;
+		    jpg.navigate = null;
+		    if("/" != path)
+			return $location.path(path);
+		    if("/remote" == $location.path())
+			return $location.path(path);
+		},
+		100
+	    );
             $rootScope.$on('$routeChangeSuccess',function () {
                 $rootScope.dashBoardHeader = false;
                 var headerNames = {
@@ -168,6 +164,8 @@ app.config(function ($routeProvider) {
                     "/media": "Media",
                     "/settings": "Settings",
                     "/radio": "Radio",
+                    "/radio/Pandora": "Pandora",
+                    "/radio/Pandora/playlist": "Pandora",
                     "/settings/bluetooth": "Bluetooth Connections",
                     "/settings/wifi": "Wifi Connections",
                     "/settings/system": "System Settings",

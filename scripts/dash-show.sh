@@ -4,9 +4,7 @@ sudo ls || exit 1
 sudo rm /var/crash/*
 export DISPLAY=:0
 ~open/open-dash/scripts/display.sh
-xset -dpms
-xset s noblank
-xset s off
+~open/open-dash/scripts/fight-screensaver.sh &
 sudo eGTouchD
 
 bluetoothctl <<-EOF
@@ -16,6 +14,8 @@ bluetoothctl <<-EOF
 	trust 00:17: 	 
 	quit
 EOF
+
+sudo create_ap --daemon wlp3s0 enp2s0 dash1 
 
 cd ~open/open-dash/
 nw .

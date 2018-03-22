@@ -14,9 +14,8 @@ var update = require('./system/update.js');
 var socket = require('socket.io');
 var system = require('./system/system.js');
 var relay = require('./server/websocket-relay.js');
-var capture = require("./server/mdd-capture.js");
-capture.app.listen(8086);
-
+var db = require('./server/database.js');
+process.env['NODE_TLS_REJECT_UNAUTHORIZED'] = '0';
 //var main_app_socket = require('socket.io-clientnpm install -g nodemon')("http://127.0.0.1:1234");
 //var webserv_socket = require('socket.io-client')("http://127.0.0.1:8080");
 const server = http.createServer().listen("1235");
@@ -130,16 +129,33 @@ process_io.on('connection', function (socket) {
   });
 
   socket.on('start_vnc', function (data) {
-    console.log("launching vnc")
+    console.log("launching vnc");
     remote.start_vnc();
 
   });
   socket.on('device-list', function (data) {
-    console.log("Got device list")
+    console.log("Got device list");
     socket.broadcast.emit('device-list', data);
 
   });
+  socket.on('save-pandora-account', function (data) {
+    console.log("Save pandora account");
+    db.savePandoraAccount(data).then(() => {
+      socket.emit("save-pandora-account", { success: true, message: "account info saved" });
+    }).catch((err) => {
+      socket.emit("save-pandora-account", { success: true, message: "account info saved" });
+    });
 
+  });
+  socket.on('get-pandora-account', function (data) {
+    console.log("Get pandora account");
+    db.getPandoraAccount(data).then((account) => {
+      socket.emit("get-pandora-account", account);
+    }).catch((err) => {
+      socket.emit("get-pandora-account", { success: false, message: err });
+    });
+
+  });
 });
 
 

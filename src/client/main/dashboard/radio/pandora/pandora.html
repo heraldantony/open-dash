@@ -1,36 +1,28 @@
-<md-dialog aria-label="Login>
-    <form ng-cloak>
-        <md-toolbar>
-            <div class="md-toolbar-tools">
-                <h2>Login</h2>
-                <span flex></span>
-                <md-button class="md-icon-button" ng-click="cancel()">
-                    <md-icon md-svg-src="img/icons/ic_close_24px.svg" aria-label="Close dialog"></md-icon>
-                </md-button>
-            </div>
-        </md-toolbar>
-        <md-dialog-content>
-            <div class="md-dialog-content">
-                <form name="Form">
-                    <div>
-                        <md-input-container class="md-block" flex-gt-sm>
-                            <label>Login</label>
-                            <input ng-model="userName">
-                        </md-input-container>
+<div class="dashboard-content scroll-bar dragscroll">
+  <md-error>{{errMsg}}</md-error>
+  <div class="white">
+    <div layout="row" layout-align="space-between right" class="tile-content">
+      <div ng-click="showStationDialog($event)">
+        <md-button>
+          <i class="material-icons">add</i>Add Station
+        </md-button>
+      </div>
+    </div>
+  </div>
 
-                        <md-input-container class="md-block" flex-gt-sm>
-                            <label>Password</label>
-                            <input ng-model="password">
-                        </md-input-container>
-                        <md-button class="md-raised md-primary">Login</md-button>
-                    </div>
-                </form>
-            </div>
-        </md-dialog-content>
-        <md-dialog-actions layout="row">
-            <md-button ng-click="close()">
-                close
+  <div class="white">
+    <md-grid-list md-cols="1" md-row-height="3em" md-gutter="1em">
+      <md-grid-tile class="md-whiteframe-10dp media-song-pointer" ng-repeat="s in stations">
+        <div layout="row" layout-align="space-between center" class="tile-content">
+          <div ng-click="showSongs(s)">
+            <md-button>
+              <i class="material-icons">radio</i>{{s.stationName}}
             </md-button>
-        </md-dialog-actions>
-    </form>
-</md-dialog>
+          </div>
+        </div>
+      </md-grid-tile>
+    </md-grid-list>
+  </div>
+
+</div>
+

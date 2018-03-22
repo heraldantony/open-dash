@@ -1,33 +1,6 @@
 $(
     function(){
 	var mddApiEndpoint = "http://127.0.0.1:8086/mdd";
-	setInterval(
-	    function(){
-		var src = mddApiEndpoint + "/screen.jpg" +
-		    "?" + new Date().getTime();
-		var img = document.getElementById("screenshot");
-		if(img)
-		    img.src = src;
-	    },
-	    16
-	);
-	setInterval(
-	    function(){
-		$.get(
-		    mddApiEndpoint + "/clientLives/",
-		    function(body){
-			var live = JSON.parse(body);
-			$(
-			    "#" + (live ? "apology" : "screenshot")
-			).addClass("hideme");
-			$(
-			    "#" + (!live ? "apology" : "screenshot")
-			).removeClass("hideme");
-		    }
-		);
-	    },
-	    500
-	);
 	function sendMouseEvent(target, name, evt){
 	    evt.preventDefault();
 	    var x = evt.offsetX / target.width * 480;
